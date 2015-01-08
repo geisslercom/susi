@@ -12,12 +12,6 @@
 #ifndef __SYS_CALL_WORKER__
 #define __SYS_CALL_WORKER__
 
-#include "Poco/Runnable.h"
-#include "Poco/Thread.h"
-#include "Poco/Process.h"
-#include "Poco/PipeStream.h"
-#include "Poco/StreamCopier.h"
-
 #include "util/Any.h"
 #include <fstream>
 #include <iostream>
@@ -65,10 +59,11 @@ namespace Susi {
                 char buff[512];
                 if(!(in = popen(command.c_str(), "r"))){
                     _event->payload["return"] = 1;
+                    return;
                 }
-                std::string output;
+                std::string output = "";
                 while(fgets(buff, sizeof(buff), in)!=NULL){
-                    output += buff;
+                    output += std::string{buff};
                 }
                 int ret = pclose(in);
                 int returnCode = WEXITSTATUS(ret);

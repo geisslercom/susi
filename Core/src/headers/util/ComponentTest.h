@@ -22,7 +22,7 @@
 
 class ComponentTest : public ::testing::Test {
 public:
-    std::string base_path;
+    std::string base_path = "";
 
     ComponentTest() {
         
