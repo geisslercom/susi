@@ -16,24 +16,10 @@ Susi::IOController::IOController() {}
 
 //high level
 std::size_t Susi::IOController::writeFile( std::string filename,char* ptr, std::size_t len ) {
-
-    Poco::Path dir = this->getAbsDirFromString( filename );
-
-    if( this->checkDir( dir ) ) {
-        // write File
-        std::ofstream s( ( char* )filename.c_str() );
-        s<<ptr;
-        s.close();
-
-        return len;
-    }
-    else {
-        std::string msg = "WriteFile: Dir ";
-        msg += dir.current();
-        msg += " don't exists!";
-        LOG(ERROR) <<  msg ;
-        throw std::runtime_error {"WriteFile: Dir don't exists!"+filename};
-    }
+    std::ofstream s( ( char* )(makeAbsolute(filename).c_str()) );
+    s<<ptr;
+    s.close();
+    return len;
 }
 
 std::size_t Susi::IOController::writeFile( std::string filename,std::string content ) {
@@ -42,7 +28,7 @@ std::size_t Susi::IOController::writeFile( std::string filename,std::string cont
 
 std::string Susi::IOController::readFile( std::string filename ) {
 
-    if( this->checkFile( this->getAbsPathFromString( filename ) ) ) {
+    if( this->checkFile( this->makeAbsolute( filename ) ) ) {
         std::string result = "";
         int length = 1024;
         std::ifstream s( ( char* )filename.c_str() );
@@ -73,156 +59,64 @@ std::string Susi::IOController::readFile( std::string filename ) {
 }
 
 bool Susi::IOController::movePath( std::string source_path, std::string dest_path ) {
-    Poco::File sf( this->getAbsPathFromString( source_path ) );
-    Poco::Path dp = this->getAbsPathFromString( dest_path );
-
-    if( sf.exists() ) {
-        sf.moveTo( dp.toString() );
-        return true;
-    }
-    else {
-        std::string msg = "movePath: SOURCE_PATH ";
-        msg += source_path;
-        msg += " don't exists!";
-        LOG(ERROR) <<  msg ;
-        throw std::runtime_error {"movePath: SOURCE_PATH don't exist!"};
-    }
+    std::string sf( this->makeAbsolute( source_path ) );
+    std::string dp = this->makeAbsolute( dest_path );
+    std::string command = "mv "+sf+" "+dp;
+    return system(command.c_str())==0;
 }
 
 bool Susi::IOController::copyPath( std::string source_path, std::string dest_path ) {
-    Poco::File sf( this->getAbsPathFromString( source_path ) );
-    Poco::Path dp = this->getAbsPathFromString( dest_path );
-
-    if( sf.exists() ) {
-        sf.copyTo( dp.toString() );
-        return true;
-    }
-    else {
-        std::string msg = "copyPath: SOURCE_PATH ";
-        msg += source_path;
-        msg += " don't exists!";
-        LOG(ERROR) <<  msg ;
-        throw std::runtime_error {"copyPath: SOURCE_PATH don't exist!"};
-    }
+    std::string sf( this->makeAbsolute( source_path ) );
+    std::string dp = this->makeAbsolute( dest_path );
+    std::string command = "cp -rf "+sf+" "+dp;
+    return system(command.c_str())==0;
 }
 
 bool Susi::IOController::deletePath( std::string path ) {
-
-    Poco::File f( this->getAbsPathFromString( path ) );
-
-    if( f.exists() ) {
-        if( f.isFile() || f.isDirectory() ) {
-            if( f.isFile() ) {
-                f.remove( false );
-                return true;
-            }
-            else {
-                f.remove( true ); // deletes recursive
-                return true;
-            }
-        }
-        else {
-            std::string msg = "Delete: PATH ";
-            msg += path;
-            msg += " is no FILE or DIR! (maybe PATH is LINK or DEVICE)";
-            LOG(ERROR) <<  msg ;
-            throw std::runtime_error {"Delete: PATH is no FILE or DIR! (maybe PATH is LINK or DEVICE)"};
-        }
-    }
-    else {
-        return false;
-    }
+    std::string p( this->makeAbsolute( path ) );
+    std::string command = "rm -rf "+p;
+    return system(command.c_str())==0;
 }
 
 // low level
 bool Susi::IOController::makeDir( std::string dir ) {
-
-    Poco::Path p( true );
-
-    p.append( dir );
-
-    Poco::File f( p );
-    f.createDirectories();
-
-    return true;
+    std::string p( this->makeAbsolute( path ) );
+    std::string command = "mkdir -p "+p;
+    return system(command.c_str())==0;
 }
 
 bool Susi::IOController::setExecutable( std::string path, bool isExecutable ) {
-    Poco::File f( this->getAbsPathFromString( path ) );
-
-    if( f.exists() ) {
-        f.setExecutable( isExecutable );
-        return true;
-    }
-    else {
-        std::string msg = "setExecutable: PATH ";
-        msg += path;
-        msg += " is no FILE or DIR!";
-        LOG(ERROR) <<  msg ;
-        throw std::runtime_error {"setExecutable: PATH is no FILE or DIR!"};
-    }
+    std::string p( this->makeAbsolute( path ) );
+    std::string command = "chmod +x "+p;
+    return system(command.c_str())==0;
 }
 
 bool Susi::IOController::getExecutable( std::string path ) {
-    Poco::File f( this->getAbsPathFromString( path ) );
-
-    if( f.exists() ) {
-        return f.canExecute();
+    std::string p( this->makeAbsolute( path ) );
+    struct stat sb;
+    if (stat(p.c_str(), &sb) == -1) {
+        perror("stat");
+        return false;
     }
-    else {
-        std::string msg = "getExecutable: PATH ";
-        msg += path;
-        msg += " is no FILE or DIR!";
-        LOG(ERROR) <<  msg ;
-        throw std::runtime_error {"getExecutable: PATH is no FILE or DIR!"};
-    }
+    return sb.st_mode & S_IXUSR;
 }
 
 // helper function
-Poco::Path Susi::IOController::getAbsPathFromString( std::string path ) {
-    Poco::Path p( path );
-    if( p.isRelative() )
-        p.makeAbsolute( this->base_path );
-    return p;
+std::string Susi::IOController::makeAbsolute(std::string path){
+    char *abs = realpath(path.c_str(),NULL);
+    std::string result{abs};
+    free(abs);
+    return result;
 }
 
-Poco::Path Susi::IOController::getAbsDirFromString( std::string path ) {
-    Poco::Path p = this->getAbsPathFromString( path );
-    p.makeParent();
-    return p;
+bool Susi::IOController::checkDir( std::string dir ) {
+    std::ifstream s{dir};
+    return s;
 }
 
-bool Susi::IOController::checkDir( Poco::Path dir ) {
-
-    Poco::File f( dir );
-
-    if( f.exists() ) {
-        if( f.isDirectory() ) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-    else {
-        return false;
-    }
-}
-
-bool Susi::IOController::checkFile( Poco::Path dir ) {
-    Poco::File f( dir );
-
-    if( f.exists() ) {
-        if( f.isFile() ) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-    else {
-        return false;
-    }
+bool Susi::IOController::checkFile( std::string dir ) {
+    std::ifstream s{dir};
+    return s;
 }
 
 bool Susi::IOController::checkFileExtension( std::string path, std::string file_extension ) {

@@ -12,14 +12,11 @@
 #ifndef __IO_CONTROLLER__
 #define __IO_CONTROLLER__
 
-#include <Poco/DirectoryIterator.h>
-#include <Poco/Path.h>
-#include <Poco/File.h>
-
 #include <string>
 #include <stdio.h>
 #include <fstream>
 #include <stdexcept>
+#include <stdlib.h>
 
 #include "logger/easylogging++.h"
 
@@ -27,7 +24,7 @@ namespace Susi {
 
     class IOController {
     public:
-        Poco::Path base_path;
+        std::string base_path;
 
         IOController();
         // high level
@@ -45,10 +42,9 @@ namespace Susi {
         bool getExecutable( std::string path );
 
         // helper functions
-        Poco::Path getAbsPathFromString( std::string path );
-        Poco::Path getAbsDirFromString( std::string path );
-        bool checkDir( Poco::Path dir ); // returns true if dir exists or false if dir not exists or is a file
-        bool checkFile( Poco::Path dir ); // returns true if file exists or false if file not exists
+        std::string makeAbsolute( std::string path );
+        bool checkDir( std::string dir ); // returns true if dir exists or false if dir not exists or is a file
+        bool checkFile( std::string dir ); // returns true if file exists or false if file not exists
 
         bool checkFileExtension( std::string path, std::string file_extension );
     };
