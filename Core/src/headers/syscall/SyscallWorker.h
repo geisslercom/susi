@@ -57,24 +57,14 @@ namespace Susi {
             _args {std::move( other._args )} {}
 
             void operator()() {
-                std::string command = _command+" ";
-                for(auto arg : _args){
-                    command += arg+" ";
-                }
-                FILE *in;
-                char buff[512];
-                if(!(in = popen(command.c_str(), "r"))){
-                    _event->payload["return"] = 1;
-                }
-                std::string output;
-                while(fgets(buff, sizeof(buff), in)!=NULL){
-                    output += buff;
-                }
-                int ret = pclose(in);
-                int returnCode = WEXITSTATUS(ret);
-                _event->payload["return"] = returnCode;
-                _event->payload["stdout"] = output;
-                _event->payload["stderr"] = "";
+                Poco::Pipe outPipe;
+                Poco::Pipe errPipe;
+                Poco::ProcessHandle ph = Poco::Process::launch( _command, _args, 0, &outPipe, &errPipe );
+                Poco::PipeInputStream ostr( outPipe );
+                Poco::PipeInputStream estr( errPipe );
+                _event->payload["return"] = ph.wait();
+                _event->payload["stdout"] = getContentFromStream( ostr );
+                _event->payload["stderr"] = getContentFromStream( estr );
                 // when event gets destructed, its acknowledged.
             }
         };
