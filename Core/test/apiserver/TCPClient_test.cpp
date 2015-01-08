@@ -63,7 +63,7 @@ protected:
 		std::thread runloop;
 	public: 
 		EchoServer(){
-			svs.bind(Poco::Net::SocketAddress{"localhost:2222"},true);
+			svs.bind(Poco::Net::SocketAddress{"127.0.0.1:2222"},true);
 			svs.listen();
 			acceptor.reset(new Poco::Net::SocketAcceptor<TestServerHandler>{svs, reactor});
 			runloop = std::move(std::thread{[this](){
@@ -94,7 +94,8 @@ TEST_F(TCPClientTest, Basic) {
 			EXPECT_EQ("foobar",data);
 		}
 	};
-	TestTCPClient client{"localhost:2222"};
+	
+	TestTCPClient client{"127.0.0.1:2222"};
 	client.send("foobar");
 	std::this_thread::sleep_for(std::chrono::milliseconds{100});
 	client.close();

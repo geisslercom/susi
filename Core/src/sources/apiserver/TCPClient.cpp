@@ -59,6 +59,8 @@ void Susi::Api::TCPClient::startRunloop(){
             
             sock = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);
             if (sock == -1)  throw std::runtime_error{"can't create socket"};
+            status = connect(sock, host_info_list->ai_addr, host_info_list->ai_addrlen);
+            if (status == -1) throw std::runtime_error{"connect error"};
             
             struct timeval timeout;      
             timeout.tv_sec = 0;
@@ -92,12 +94,14 @@ void Susi::Api::TCPClient::startRunloop(){
                     size_t retryCount = 0;
                     bool success = false;
                     while(!isClosed.load() && retryCount < maxReconnectCount){
-                        LOG(DEBUG)<<"try reconnect...";
+                        LOG(DEBUG)<<"try reconnect... to "<<host<<" : "<<port ;
                         try{
                             retryCount++;
                             ::close(sock);
                             sock = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);
                             if (sock == -1)  throw std::runtime_error{"can't create socket"};
+                            status = connect(sock, host_info_list->ai_addr, host_info_list->ai_addrlen);
+                            if (status == -1) throw std::runtime_error{"connect error"};
                             onReconnect();
                             success = true;
                             if(sendbuff != ""){

@@ -34,7 +34,7 @@ TEST_F(ApiClientTest, Basic) {
 	std::condition_variable cond;
 	bool ready = false;
 
-	Susi::Api::ApiClient api{"[::1]:4000"};
+	Susi::Api::ApiClient api{"127.0.0.1:4000"};
 	api.subscribe("foo",Susi::Events::Consumer{[&](Susi::Events::SharedEventPtr evt){
 		ready = true;
 		cond.notify_all();
@@ -52,7 +52,7 @@ TEST_F(ApiClientTest, Reconnect) {
 	std::condition_variable cond;
 	bool ready = false;
 
-	Susi::Api::ApiClient api{"[::1]:4000"};
+	Susi::Api::ApiClient api{"127.0.0.1:4000"};
 	api.subscribe("foo",Susi::Events::Consumer{[&](Susi::Events::SharedEventPtr evt){
 		ready = true;
 		cond.notify_all();
