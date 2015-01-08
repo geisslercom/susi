@@ -13,7 +13,6 @@
 #define __SESSIONMANAGER__
 
 #include <map>
-#include <Poco/Timestamp.h>
 #include <mutex>
 #include <chrono>
 #include <thread>
