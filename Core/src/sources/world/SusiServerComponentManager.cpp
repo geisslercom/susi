@@ -164,23 +164,6 @@ Susi::System::SusiServerComponentManager::SusiServerComponentManager(Susi::Util:
 	registerDependency("httpserver","sessionmanager");
 	
 	/**
-	 * Declare Autodiscovery
-	 */
-	registerComponent("autodiscovery", [](ComponentManager * mgr, Any & config){
-		std::string mcast{"239.23.23.23:4242"};
-		std::string ownName{"susi"};
-		if(config["mcast"].isString()){
-			mcast = static_cast<std::string>(config["mcast"]);
-		}
-		if(config["address"].isString()){
-			ownName = static_cast<std::string>(config["address"]);
-		}
-		return std::shared_ptr<Component>{new Susi::Autodiscovery::AutoDiscoveryComponent{mcast,ownName,mgr}};
-	});
-	registerDependency("autodiscovery","eventsystem");
-	registerDependency("autodiscovery","sessionmanager");
-
-	/**
 	 * Declare apiserver
 	 */
 	registerComponent("apiserver", [](ComponentManager * mgr, Any & config) {			
@@ -197,19 +180,6 @@ Susi::System::SusiServerComponentManager::SusiServerComponentManager(Susi::Util:
 	});
 	registerDependency("constraints","eventsystem");
 	registerDependency("constraints","sessionmanager");
-
-	/**
-	 * Declare DDHCP
-	 */
-	registerComponent("ddhcp", [](ComponentManager * mgr, Any & config) {			
-		unsigned short port = 1704;
-		try{
-			port = (unsigned short)(int)config[port];
-		}catch(...){}
-		return std::shared_ptr<Component>{new Susi::Ddhcp::DDHCPComponent{mgr,port}};
-	});
-	registerDependency("ddhcp","eventsystem");
-	registerDependency("ddhcp","sessionmanager");
 
 	/**
 	 * Declare duktape js engine

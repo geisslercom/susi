@@ -29,9 +29,7 @@
 //#include "webstack/HttpServerComponent.h"
 #include "webstack/OnionHttpServerComponent.h"
 
-#include "autodiscovery/AutoDiscoveryComponent.h"
 #include "events/ConstraintController.h"
-#include "ddhcp/DDHCPComponent.h"
 #include "logger/Logger.h"
 #include "duktape/DuktapeEngine.h"
 
