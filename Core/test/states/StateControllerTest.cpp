@@ -2,6 +2,8 @@
 #include "iocontroller/IOController.h"
 #include "logger/easylogging++.h"
 #include "states/StateController.h"
+#include <Poco/Path.h>
+
 
 using Susi::Util::Any;
 

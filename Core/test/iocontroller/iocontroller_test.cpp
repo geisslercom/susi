@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include "iocontroller/IOController.h"
 #include "util/TestHelper.h"
-
+#include <Poco/Path.h>
 
 class IOControllerTest : public ::testing::Test {
 	public:
@@ -153,23 +153,23 @@ TEST_F(IOControllerTest, SetAndGetExecutable){
 
 TEST_F(IOControllerTest,CheckDir){
 
-	bool result = controller.checkDir(Poco::Path(current_path + "/IOTESTS/NO_CHECKDIR"));
+	bool result = controller.checkDir((current_path + "/IOTESTS/NO_CHECKDIR"));
 
 	EXPECT_FALSE(result);
 
-	result = controller.checkDir(Poco::Path(current_path + "/IOTESTS/CHECKDIR"));
+	result = controller.checkDir((current_path + "/IOTESTS/CHECKDIR"));
 
 	EXPECT_TRUE(result);
 }
 
 TEST_F(IOControllerTest,CheckFile){
 
-	bool result = controller.checkFile(Poco::Path(current_path + "/IOTESTS/none_exitent_file.dat"));
+	bool result = controller.checkFile((current_path + "/IOTESTS/none_exitent_file.dat"));
 
 	EXPECT_FALSE(result);
 
 	controller.writeFile(current_path + "/IOTESTS/exitent_file.dat",data);
-	result = controller.checkFile(Poco::Path(current_path + "/IOTESTS/exitent_file.dat"));
+	result = controller.checkFile((current_path + "/IOTESTS/exitent_file.dat"));
 
 	EXPECT_TRUE(result);
 }
@@ -178,7 +178,7 @@ TEST_F(IOControllerTest,MovePath_DIR_TO_DIR){
 	bool result = false;
 
 	// check init from SetUp
-	result = controller.checkDir(Poco::Path(current_path + "/IOTESTS/CHECKDIR"));
+	result = controller.checkDir((current_path + "/IOTESTS/CHECKDIR"));
 	EXPECT_TRUE(result);
 
 	// move first time
@@ -191,7 +191,7 @@ TEST_F(IOControllerTest,MovePath_DIR_TO_DIR){
 	}, std::runtime_error);
 
 	// check old location
-	result = controller.checkDir(Poco::Path(current_path + "/IOTESTS/CHECKDIR"));
+	result = controller.checkDir((current_path + "/IOTESTS/CHECKDIR"));
 	EXPECT_FALSE(result);
 
 	// move back for TearDown
@@ -199,7 +199,7 @@ TEST_F(IOControllerTest,MovePath_DIR_TO_DIR){
 	EXPECT_TRUE(result);
 
 	// check new location
-	result = controller.checkDir(Poco::Path(current_path + "/CHECKDIR"));
+	result = controller.checkDir((current_path + "/CHECKDIR"));
 	EXPECT_FALSE(result);
 }
 
@@ -208,7 +208,7 @@ TEST_F(IOControllerTest,MovePath_FILE_TO_DIR){
 
 	// check init
 	controller.writeFile(current_path + "/IOTESTS/move_file.dat",data);
-	result = controller.checkFile(Poco::Path(current_path + "/IOTESTS/move_file.dat"));
+	result = controller.checkFile((current_path + "/IOTESTS/move_file.dat"));
 	EXPECT_TRUE(result);
 
 	// move first time
@@ -221,11 +221,11 @@ TEST_F(IOControllerTest,MovePath_FILE_TO_DIR){
 	}, std::runtime_error);
 
 	// check old location
-	result = controller.checkFile(Poco::Path(current_path + "/IOTESTS/move_file.dat"));
+	result = controller.checkFile((current_path + "/IOTESTS/move_file.dat"));
 	EXPECT_FALSE(result);
 
 	// check new location
-	result = controller.checkFile(Poco::Path(current_path + "/IOTESTS/CHECKDIR/move_file.dat"));
+	result = controller.checkFile((current_path + "/IOTESTS/CHECKDIR/move_file.dat"));
 	EXPECT_TRUE(result);
 }
 
@@ -234,7 +234,7 @@ TEST_F(IOControllerTest,MovePath_FILE_TO_FILE){
 
 	// check init
 	controller.writeFile(current_path + "/IOTESTS/move_file.dat",data);
-	result = controller.checkFile(Poco::Path(current_path + "/IOTESTS/move_file.dat"));
+	result = controller.checkFile((current_path + "/IOTESTS/move_file.dat"));
 	EXPECT_TRUE(result);
 
 	// move first time
@@ -247,11 +247,11 @@ TEST_F(IOControllerTest,MovePath_FILE_TO_FILE){
 	}, std::runtime_error);
 
 	// check old location
-	result = controller.checkFile(Poco::Path(current_path + "/IOTESTS/move_file.dat"));
+	result = controller.checkFile((current_path + "/IOTESTS/move_file.dat"));
 	EXPECT_FALSE(result);
 
 	// check new location
-	result = controller.checkFile(Poco::Path(current_path + "/IOTESTS/moved_file.dat"));
+	result = controller.checkFile((current_path + "/IOTESTS/moved_file.dat"));
 	EXPECT_TRUE(result);
 }
 
@@ -259,7 +259,7 @@ TEST_F(IOControllerTest,CopyPath_DIR_TO_DIR){
 	bool result = false;
 
 	// check init from SetUp
-	result = controller.checkDir(Poco::Path(current_path + "/IOTESTS/CHECKDIR"));
+	result = controller.checkDir((current_path + "/IOTESTS/CHECKDIR"));
 	EXPECT_TRUE(result);
 
 	// copy
@@ -267,11 +267,11 @@ TEST_F(IOControllerTest,CopyPath_DIR_TO_DIR){
 	EXPECT_TRUE(result);
 
 	// check old location
-	result = controller.checkDir(Poco::Path(current_path + "/IOTESTS/CHECKDIR"));
+	result = controller.checkDir((current_path + "/IOTESTS/CHECKDIR"));
 	EXPECT_TRUE(result);
 
 	// check new location
-	result = controller.checkDir(Poco::Path(current_path + "/CHECKDIR"));
+	result = controller.checkDir((current_path + "/CHECKDIR"));
 	EXPECT_TRUE(result);
 
 	// clean up
@@ -283,7 +283,7 @@ TEST_F(IOControllerTest,CopyPath_FILE_TO_DIR){
 
 	// init
 	controller.writeFile(current_path + "/IOTESTS/copy_file.dat",data);
-	result = controller.checkDir(Poco::Path(current_path + "/IOTESTS/CHECKDIR"));
+	result = controller.checkDir((current_path + "/IOTESTS/CHECKDIR"));
 	EXPECT_TRUE(result);
 
 	// copy
@@ -291,11 +291,11 @@ TEST_F(IOControllerTest,CopyPath_FILE_TO_DIR){
 	EXPECT_TRUE(result);
 
 	// check old location
-	result = controller.checkFile(Poco::Path(current_path + "/IOTESTS/copy_file.dat"));
+	result = controller.checkFile((current_path + "/IOTESTS/copy_file.dat"));
 	EXPECT_TRUE(result);
 
 	// check new location
-	result = controller.checkFile(Poco::Path(current_path + "/IOTESTS/CHECKDIR/copy_file.dat"));
+	result = controller.checkFile((current_path + "/IOTESTS/CHECKDIR/copy_file.dat"));
 	EXPECT_TRUE(result);
 }
 
@@ -304,7 +304,7 @@ TEST_F(IOControllerTest,CopyPath_FILE_TO_FILE){
 
 	// init
 	controller.writeFile(current_path + "/IOTESTS/copy_file.dat",data);
-	result = controller.checkFile(Poco::Path(current_path + "/IOTESTS/copied_file.dat"));
+	result = controller.checkFile((current_path + "/IOTESTS/copied_file.dat"));
 	EXPECT_FALSE(result);
 
 	// copy
@@ -312,11 +312,11 @@ TEST_F(IOControllerTest,CopyPath_FILE_TO_FILE){
 	EXPECT_TRUE(result);
 
 	// check old location
-	result = controller.checkFile(Poco::Path(current_path + "/IOTESTS/copy_file.dat"));
+	result = controller.checkFile((current_path + "/IOTESTS/copy_file.dat"));
 	EXPECT_TRUE(result);
 
 	// check new location
-	result = controller.checkFile(Poco::Path(current_path + "/IOTESTS/copied_file.dat"));
+	result = controller.checkFile((current_path + "/IOTESTS/copied_file.dat"));
 	EXPECT_TRUE(result);
 }
 
