@@ -41,8 +41,6 @@ namespace Susi {
         // used to set a value in the config object (should be used by parseCommandLine())
         void set( std::string key, Any value );
 
-        // recursive config loading, in alphabetical order
-        void rec_dir( const std::string & path );
     public:
         Config() {};
         // constructs new config object

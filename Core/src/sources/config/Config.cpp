@@ -71,22 +71,6 @@ void Susi::Config::loadConfig( std::string path ) {
         load_count++;
 
     }
-    else if( io.checkDir( path ) ) {
-        rec_dir( path );
-    }
-}
-
-void Susi::Config::rec_dir( const std::string & path )
-{
-    Poco::DirectoryIterator end;
-    for( Poco::DirectoryIterator it( path ); it != end; ++it ) {
-        if( !it->isDirectory() ) {
-            loadConfig( it->path() );
-        }
-        else if( it->isDirectory() ) {
-            rec_dir( it->path() );
-        }
-    }
 }
 
 void Susi::Config::setFileExtension( std::string _file_extension ) {
