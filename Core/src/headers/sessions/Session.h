@@ -10,7 +10,6 @@
  */
 
 #include <map>
-#include <Poco/Timestamp.h>
 #include <chrono>
 #include <iostream>
 
@@ -19,7 +18,7 @@
 namespace Susi {
     class Session {
     protected:
-        Poco::Timestamp deadline;
+        std::chrono::time_point<std::chrono::system_clock> deadline;
         std::map<std::string, Susi::Util::Any> attributes;
         std::map<std::string, std::deque<Susi::Util::Any>> multiAttributes;
 

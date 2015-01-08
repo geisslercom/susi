@@ -13,16 +13,17 @@
 
 namespace Susi {
     Session::Session( std::chrono::milliseconds milliseconds ) {
+        deadline = std::chrono::system_clock::now();
         addTime( milliseconds );
     }
     bool Session::isDead() {
-        Poco::Timestamp now;
+        auto now = std::chrono::system_clock::now();
         //std::cout<<deadline.epochTime()<<" : "<<now.epochTime()<<std::endl;
         if( deadline <= now ) return true;
         return false;
     }
     void Session::addTime( std::chrono::milliseconds milliseconds ) {
-        deadline += std::chrono::duration_cast<std::chrono::microseconds>( milliseconds ).count();
+        deadline += milliseconds;
     }
     void Session::pushAttribute( std::string key, Susi::Util::Any value ) {
         if( attributes.count( key ) > 0 ) {
@@ -67,7 +68,7 @@ namespace Susi {
         return false;
     }
     bool Session::die() {
-        deadline = Poco::Timestamp();
+        deadline = std::chrono::system_clock::now();
         return true;
     }
 }
