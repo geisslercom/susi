@@ -13,7 +13,6 @@
 #define __SYS_CALL_COMPONENT__
 
 #include "world/BaseComponent.h"
-#include "Poco/Foundation.h"
 
 #include "syscall/SyscallWorker.h"
 #include "logger/easylogging++.h"
@@ -68,13 +67,8 @@ namespace Susi {
                 }
                 std::vector<std::string> arguments;
                 std::string binary {"noshell"};
-#if defined(POCO_OS_FAMILY_UNIX)
                 binary = "sh";
                 arguments.push_back( "-c" );
-#elif defined(POCO_OS_FAMILY_WINDOWS)
-                binary = "cmd";
-                arguments.push_back( "/C" );
-#endif
                 arguments.push_back( commandline );
                 pool.add( Worker {std::move( event ),binary,arguments} );
             }
