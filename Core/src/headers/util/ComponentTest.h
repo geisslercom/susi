@@ -75,7 +75,7 @@ protected:
                                   "\"db\": \"auth\""
                                   "},"
                                   "\"tcpapiserver\": {"
-                                  "\"address\": \"[::1]:4000\","
+                                  "\"address\": \"4000\","
                                   "\"threads\": 4,"
                                   "\"backlog\": 32"
                                   "},"

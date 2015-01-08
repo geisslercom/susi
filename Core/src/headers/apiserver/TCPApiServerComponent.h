@@ -12,18 +12,17 @@
 #ifndef __TCPAPISERVERCOMPONENT__
 #define __TCPAPISERVERCOMPONENT__
 
-#include "Poco/Net/TCPServer.h"
-#include "Poco/Net/TCPServerConnectionFactory.h"
-#include "Poco/Net/TCPServerConnection.h"
-#include "Poco/Net/Socket.h"
-#include "Poco/Net/SocketReactor.h"
-#include "Poco/Net/SocketAcceptor.h"
-#include "Poco/Net/SocketNotification.h" 
-#include "Poco/NObserver.h"
 #include "logger/easylogging++.h"
 #include "apiserver/ApiServerComponent.h"
 #include "apiserver/JSONStreamCollector.h"
 #include "world/BaseComponent.h"
+
+#include <netdb.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/epoll.h>
+
+#define MAXEVENTS 128
 
 namespace Susi {
     namespace Api {
@@ -31,122 +30,263 @@ namespace Susi {
         class TCPApiServerComponent : public Susi::System::BaseComponent {
         protected:
 
-            class ConnectionHandler {
-            public:
-                ConnectionHandler(Poco::Net::StreamSocket& socket, Poco::Net::SocketReactor& reactor):
-                    _socket(socket),
-                    _reactor(reactor),
-                    _pBuffer{new char[BUFFER_SIZE]},
-                    _collector{[this](std::string & msg){
-                        auto data = Susi::Util::Any::fromJSONString(msg);
-                        _api->onMessage(_sessionID,data);
-                    }}
+            std::string address;
+            std::shared_ptr<Susi::Api::ApiServerComponent> api;
+            std::shared_ptr<Susi::Events::IEventSystem> eventsystem;
+
+            int sfd;
+
+            std::thread runloop;
+
+            std::map<int,Susi::Api::JSONStreamCollector> collectors;
+
+            int createAndBind(const char *port, bool forceIPv6 = false){
+                struct addrinfo hints;
+                struct addrinfo *result, *rp;
+                int s, sfd;
+
+                memset (&hints, 0, sizeof (struct addrinfo));
+                hints.ai_family = forceIPv6 ? AF_INET6 : AF_UNSPEC;     /* Return IPv4 and IPv6 choices */
+                hints.ai_socktype = SOCK_STREAM; /* We want a TCP socket */
+                hints.ai_flags = AI_PASSIVE;     /* All interfaces */
+
+                s = getaddrinfo (NULL, port, &hints, &result);
+                if (s != 0)
                 {
-                    _reactor.addEventHandler(_socket, Poco::NObserver<ConnectionHandler, Poco::Net::ReadableNotification>(*this, &ConnectionHandler::onReadable));
-                    _reactor.addEventHandler(_socket, Poco::NObserver<ConnectionHandler, Poco::Net::ShutdownNotification>(*this, &ConnectionHandler::onShutdown));
+                  fprintf (stderr, "getaddrinfo: %s\n", gai_strerror (s));
+                  return -1;
                 }
 
-                ~ConnectionHandler() {
-                    _reactor.removeEventHandler(_socket, Poco::NObserver<ConnectionHandler, Poco::Net::ReadableNotification>(*this, &ConnectionHandler::onReadable));
-                    _reactor.removeEventHandler(_socket, Poco::NObserver<ConnectionHandler, Poco::Net::ShutdownNotification>(*this, &ConnectionHandler::onShutdown));
-                    _api->unregisterSender(_sessionID);
-                    _api->onClose(_sessionID);
+                for (rp = result; rp != NULL; rp = rp->ai_next) {
+                    sfd = socket (rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+                    if (sfd == -1)continue;
+                    s = bind (sfd, rp->ai_addr, rp->ai_addrlen);
+                    if (s == 0)break;
+                    close (sfd);
                 }
 
-                void onReadable(const Poco::AutoPtr<Poco::Net::ReadableNotification>& pNf) {
-                    int n = _socket.receiveBytes(_pBuffer, BUFFER_SIZE);
-                    if (n > 0){
-                        std::string data{_pBuffer,static_cast<size_t>(n)};
-                        _collector.collect(data);
-                    }else{
-                        delete this;
+                if (rp == NULL){
+                    fprintf (stderr, "Could not bind\n");
+                    return -1;
+                }
+
+                freeaddrinfo (result);
+                return sfd;
+            }
+
+            int makeSocketNonblocking (int sfd){
+                int flags, s;
+                flags = fcntl (sfd, F_GETFL, 0);
+                if (flags == -1) {
+                    perror ("fcntl");
+                    return -1;
+                }
+                flags |= O_NONBLOCK;
+                s = fcntl (sfd, F_SETFL, flags);
+                if (s == -1) {
+                    perror ("fcntl");
+                    return -1;
+                }
+                return 0;
+            }
+
+            void run(){
+                int s;
+                int efd;
+                struct epoll_event event;
+                struct epoll_event *events;
+
+                sfd = createAndBind (address.c_str(),true);
+                if (sfd == -1)
+                abort ();
+
+                s = makeSocketNonblocking (sfd);
+                if (s == -1)
+                abort ();
+
+                s = listen (sfd, SOMAXCONN);
+                if (s == -1)
+                {
+                  perror ("listen");
+                  abort ();
+                }
+
+                efd = epoll_create1 (0);
+                if (efd == -1)
+                {
+                  perror ("epoll_create");
+                  abort ();
+                }
+
+                event.data.fd = sfd;
+                event.events = EPOLLIN | EPOLLET;
+                s = epoll_ctl (efd, EPOLL_CTL_ADD, sfd, &event);
+                if (s == -1)
+                {
+                  perror ("epoll_ctl");
+                  abort ();
+                }
+
+                /* Buffer where events are returned */
+                events = (struct epoll_event*)calloc (MAXEVENTS, sizeof event);
+
+                /* The event loop */
+                while (1)
+                {
+                  int n, i;
+
+                  n = epoll_wait (efd, events, MAXEVENTS, -1);
+                  for (i = 0; i < n; i++)
+                {
+                  if ((events[i].events & EPOLLERR) ||
+                          (events[i].events & EPOLLHUP) ||
+                          (!(events[i].events & EPOLLIN)))
+                    {
+                          /* An error has occured on this fd, or the socket is not
+                             ready for reading (why were we notified then?) */
+                      fprintf (stderr, "epoll error\n");
+                      close (events[i].data.fd);
+                      continue;
+                    }
+
+                  else if (sfd == events[i].data.fd)
+                    {
+                          /* We have a notification on the listening socket, which
+                             means one or more incoming connections. */
+                          while (1)
+                            {
+                              struct sockaddr in_addr;
+                              socklen_t in_len;
+                              int infd;
+                              char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
+
+                              in_len = sizeof in_addr;
+                              infd = accept (sfd, &in_addr, &in_len);
+                              if (infd == -1)
+                                {
+                                  if ((errno == EAGAIN) ||
+                                      (errno == EWOULDBLOCK))
+                                    {
+                                      /* We have processed all incoming
+                                         connections. */
+                                      break;
+                                    }
+                                  else
+                                    {
+                                      perror ("accept");
+                                      break;
+                                    }
+                                }
+
+                              s = getnameinfo (&in_addr, in_len,
+                                               hbuf, sizeof hbuf,
+                                               sbuf, sizeof sbuf,
+                                               NI_NUMERICHOST | NI_NUMERICSERV);
+                              if (s == 0)
+                                {
+                                  printf("Accepted connection on descriptor %d "
+                                         "(host=%s, port=%s)\n", infd, hbuf, sbuf);
+                                }
+
+                              /* Make the incoming socket non-blocking and add it to the
+                                 list of fds to monitor. */
+                              s = makeSocketNonblocking (infd);
+                              if (s == -1)
+                                abort ();
+
+                              event.data.fd = infd;
+                              event.events = EPOLLIN | EPOLLET;
+                              s = epoll_ctl (efd, EPOLL_CTL_ADD, infd, &event);
+                              if (s == -1)
+                                {
+                                  perror ("epoll_ctl");
+                                  abort ();
+                                }
+                              collectors[infd] = JSONStreamCollector{[this,infd](std::string data){
+                                auto doc = Susi::Util::Any::fromJSONString(data);
+                                std::string res = doc.toJSONString();
+                                write(infd,res.c_str(),res.size());
+                              }};
+                            }
+                          continue;
+                        }
+                      else
+                        {
+                          /* We have data on the fd waiting to be read. Read and
+                             display it. We must read whatever data is available
+                             completely, as we are running in edge-triggered mode
+                             and won't get a notification again for the same
+                             data. */
+                          int done = 0;
+
+                          while (1)
+                            {
+                              ssize_t count;
+                              char buf[512];
+
+                              count = read (events[i].data.fd, buf, sizeof buf);
+                              if (count == -1)
+                                {
+                                  /* If errno == EAGAIN, that means we have read all
+                                     data. So go back to the main loop. */
+                                  if (errno != EAGAIN)
+                                    {
+                                      perror ("read");
+                                      done = 1;
+                                    }
+                                  break;
+                                }
+                              else if (count == 0)
+                                {
+                                  /* End of file. The remote has closed the
+                                     connection. */
+                                  done = 1;
+                                  break;
+                                }
+
+                              /* collect the buffer*/
+                              std::string chunk{buf,uint32_t(count)};
+                              try{
+                                collectors[events[i].data.fd].collect(chunk);                                
+                              }catch(const std::exception & e){
+                                LOG(ERROR) << "error while processing user data: "<<e.what();
+                                done = 1;
+                                break;
+                              }
+                            }
+
+                          if (done)
+                            {
+                              printf ("Closed connection on descriptor %d\n",
+                                      events[i].data.fd);
+                              /* Closing the descriptor will make epoll remove it
+                                 from the set of descriptors which are monitored. */
+                              close (events[i].data.fd);
+                              collectors.erase(events[i].data.fd);
+                            }
+                        }
                     }
                 }
 
-                void onShutdown(const Poco::AutoPtr<Poco::Net::ShutdownNotification>& pNf) {
-                    delete this;
-                }
-
-                void setApi(std::shared_ptr<Susi::Api::ApiServerComponent> api){
-                    _api = api;
-                }
-
-                void setSessionID(std::string id){
-                    _sessionID = id;
-                }
-
-                Poco::Net::StreamSocket& socket(){
-                    return _socket;
-                }
-
-            private:
-                enum
-                {
-                    BUFFER_SIZE = 1024
-                };
-
-                std::shared_ptr<Susi::Api::ApiServerComponent> _api;
-                std::string _sessionID;
-                Poco::Net::StreamSocket   _socket;
-                Poco::Net::SocketReactor& _reactor;
-                char*                     _pBuffer;
-                Susi::Api::JSONStreamCollector _collector;
-            };
-            
-            class Acceptor : public Poco::Net::SocketAcceptor<ConnectionHandler> {
-            public:
-                Acceptor(Poco::Net::ServerSocket & svs, Poco::Net::SocketReactor & reactor, std::shared_ptr<Susi::Api::ApiServerComponent> api) :
-                    Poco::Net::SocketAcceptor<ConnectionHandler>{svs,reactor},
-                    _api{api} {}
-            protected:
-                std::shared_ptr<ApiServerComponent> _api;
-                virtual ConnectionHandler* createServiceHandler(Poco::Net::StreamSocket & socket) override{
-                    auto ptr = new ConnectionHandler{socket,*(reactor())};
-                    Poco::Timestamp now;
-                    std::string sessionID = std::to_string( now.epochMicroseconds() );
-                    ptr->setApi(_api);
-                    ptr->setSessionID(sessionID);
-                    _api->onConnect(sessionID);
-                    _api->registerSender(sessionID,[ptr](Susi::Util::Any & data){
-                        std::string msg = data.toJSONString()+"\n";
-                        ptr->socket().sendBytes(msg.c_str(),msg.size());
-                    });
-                    return ptr;
-                }
-            };
-
-            std::shared_ptr<Susi::Api::ApiServerComponent> api;
-            std::shared_ptr<Susi::Events::IEventSystem> eventsystem;
-            Poco::Net::SocketAddress address;
-            Poco::Net::ServerSocket serverSocket;
-            Poco::Net::SocketReactor reactor;
-            Acceptor acceptor;
-            std::thread runloop;
+                free (events);
+                close (sfd);
+            }
 
         public:
             TCPApiServerComponent( Susi::System::ComponentManager * mgr,
                                    std::string addr ) :
                 Susi::System::BaseComponent {mgr},
-                 api {componentManager->getComponent<Susi::Api::ApiServerComponent>( "apiserver" )},
-                 eventsystem {componentManager->getComponent<Susi::Events::IEventSystem>( "eventsystem" )},
                  address {addr},
-                 serverSocket {address},
-                 acceptor{serverSocket,reactor,api}
+                 api {componentManager->getComponent<Susi::Api::ApiServerComponent>( "apiserver" )},
+                 eventsystem {componentManager->getComponent<Susi::Events::IEventSystem>( "eventsystem" )}
             {}
 
             virtual void start() override {
-                runloop = std::move(std::thread{[this](){
-                    reactor.run();
-                }});
-                std::string msg {"started TCPApiServerComponent on "};
-                msg += address.toString();
-                LOG(INFO) <<  msg ;
-                std::this_thread::sleep_for( std::chrono::milliseconds {250} );
+                runloop = std::move(std::thread{[this](){run();}});
             }
             virtual void stop() override {
-                reactor.stop();
+                close(sfd);
                 if(runloop.joinable())runloop.join();
-                serverSocket.close();
             }
             ~TCPApiServerComponent() {
                 stop();
