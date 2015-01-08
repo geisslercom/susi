@@ -38,7 +38,10 @@ namespace Susi {
 
             std::thread runloop;
 
-            std::map<int,Susi::Api::JSONStreamCollector> collectors;
+            std::map<int,std::string> ids;
+            std::map<std::string,Susi::Api::JSONStreamCollector> collectors; // fd to collector
+
+            bool shouldStop = false;
 
             int createAndBind(const char *port, bool forceIPv6 = false){
                 struct addrinfo hints;
@@ -60,6 +63,11 @@ namespace Susi {
                 for (rp = result; rp != NULL; rp = rp->ai_next) {
                     sfd = socket (rp->ai_family, rp->ai_socktype, rp->ai_protocol);
                     if (sfd == -1)continue;
+                    int yes = 1;
+                    if ( setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1 )
+                    {
+                        perror("setsockopt");
+                    }
                     s = bind (sfd, rp->ai_addr, rp->ai_addrlen);
                     if (s == 0)break;
                     close (sfd);
@@ -131,11 +139,11 @@ namespace Susi {
                 events = (struct epoll_event*)calloc (MAXEVENTS, sizeof event);
 
                 /* The event loop */
-                while (1)
+                while (!shouldStop)
                 {
                   int n, i;
 
-                  n = epoll_wait (efd, events, MAXEVENTS, -1);
+                  n = epoll_wait (efd, events, MAXEVENTS, 250);
                   for (i = 0; i < n; i++)
                 {
                   if ((events[i].events & EPOLLERR) ||
@@ -145,7 +153,11 @@ namespace Susi {
                           /* An error has occured on this fd, or the socket is not
                              ready for reading (why were we notified then?) */
                       fprintf (stderr, "epoll error\n");
+                      auto id = ids[events[i].data.fd];
+                      api->onClose(id);
                       close (events[i].data.fd);
+                      collectors.erase(id);
+                      ids.erase(events[i].data.fd);
                       continue;
                     }
 
@@ -202,10 +214,18 @@ namespace Susi {
                                   perror ("epoll_ctl");
                                   abort ();
                                 }
-                              collectors[infd] = JSONStreamCollector{[this,infd](std::string data){
+                    
+                              std::string id = std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
+                              ids[infd] = id;
+                              api->onConnect(id);
+                              api->registerSender(id,[this,infd](Susi::Util::Any & data){
+                                std::string packet = data.toJSONString();
+                                write(infd,packet.c_str(),packet.size());
+                              });
+                              collectors[id] = JSONStreamCollector{[this,id](std::string data){
+                                std::string _id = id;
                                 auto doc = Susi::Util::Any::fromJSONString(data);
-                                std::string res = doc.toJSONString();
-                                write(infd,res.c_str(),res.size());
+                                api->onMessage(_id,doc);
                               }};
                             }
                           continue;
@@ -218,7 +238,7 @@ namespace Susi {
                              and won't get a notification again for the same
                              data. */
                           int done = 0;
-
+                          std::string id = ids[events[i].data.fd];
                           while (1)
                             {
                               ssize_t count;
@@ -247,7 +267,7 @@ namespace Susi {
                               /* collect the buffer*/
                               std::string chunk{buf,uint32_t(count)};
                               try{
-                                collectors[events[i].data.fd].collect(chunk);                                
+                                collectors[id].collect(chunk);                                
                               }catch(const std::exception & e){
                                 LOG(ERROR) << "error while processing user data: "<<e.what();
                                 done = 1;
@@ -261,8 +281,11 @@ namespace Susi {
                                       events[i].data.fd);
                               /* Closing the descriptor will make epoll remove it
                                  from the set of descriptors which are monitored. */
+                              auto id = ids[events[i].data.fd];
+                              api->onClose(id);
                               close (events[i].data.fd);
-                              collectors.erase(events[i].data.fd);
+                              collectors.erase(id);
+                              ids.erase(events[i].data.fd);
                             }
                         }
                     }
@@ -285,7 +308,9 @@ namespace Susi {
                 runloop = std::move(std::thread{[this](){run();}});
             }
             virtual void stop() override {
+                shouldStop = true;
                 close(sfd);
+                LOG(INFO) << "waiting for tcp server...";
                 if(runloop.joinable())runloop.join();
             }
             ~TCPApiServerComponent() {
