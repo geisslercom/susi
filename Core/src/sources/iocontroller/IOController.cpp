@@ -80,7 +80,7 @@ bool Susi::IOController::deletePath( std::string path ) {
 
 // low level
 bool Susi::IOController::makeDir( std::string dir ) {
-    std::string p( this->makeAbsolute( path ) );
+    std::string p( this->makeAbsolute( dir ) );
     std::string command = "mkdir -p "+p;
     return system(command.c_str())==0;
 }
