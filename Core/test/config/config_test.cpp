@@ -2,6 +2,7 @@
 #include "world/ComponentManager.h"
 #include "config/Config.h"
 #include "iocontroller/IOController.h"
+#include <Poco/Path.h>
 
 class ConfigTest : public ::testing::Test {
 

@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "db/Manager.h"
 #include "iocontroller/IOController.h"
+#include <Poco/Path.h>
 
 
 TEST(DBManager, Contruct) {

@@ -1,4 +1,5 @@
 #include "util/ComponentTest.h"
+#include <Poco/Path.h>
 
 class AuthControllerTest : public ComponentTest {
 protected:

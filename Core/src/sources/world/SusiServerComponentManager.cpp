@@ -77,15 +77,6 @@ Susi::System::SusiServerComponentManager::SusiServerComponentManager(Susi::Util:
 	registerDependency("tcpapiserver","apiserver");
 
 	/**
-	 * Declare enginestarter
-	 */
-	registerComponent("enginestarter", [](ComponentManager * mgr, Any & config) {		
-		return std::shared_ptr<Component>{new Susi::EngineStarter::StarterComponent{mgr}};
-	});
-	registerDependency("enginestarter","eventsystem");
-	registerDependency("enginestarter","sessionmanager");
-
-	/**
 	 * Declare iocontroller
 	 */
 	registerComponent("iocontroller", [](ComponentManager * mgr, Any & config) {			

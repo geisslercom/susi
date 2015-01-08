@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "db/Database.h"
 #include "iocontroller/IOController.h"
+#include <Poco/Path.h>
 
 class DatabaseTest : public ::testing::Test {
 public:

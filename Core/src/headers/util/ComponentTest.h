@@ -18,6 +18,7 @@
 #include "logger/easylogging++.h"
 #include "events/IEventSystem.h"
 #include "world/SusiServerComponentManager.h"
+#include <Poco/Path.h>
 
 class ComponentTest : public ::testing::Test {
 public:
