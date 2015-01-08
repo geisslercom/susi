@@ -12,12 +12,6 @@
 #ifndef __SYS_CALL_WORKER__
 #define __SYS_CALL_WORKER__
 
-#include "Poco/Runnable.h"
-#include "Poco/Thread.h"
-#include "Poco/Process.h"
-#include "Poco/PipeStream.h"
-#include "Poco/StreamCopier.h"
-
 #include "util/Any.h"
 #include <fstream>
 #include <iostream>
@@ -57,15 +51,26 @@ namespace Susi {
             _args {std::move( other._args )} {}
 
             void operator()() {
-                Poco::Pipe outPipe;
-                Poco::Pipe errPipe;
-                Poco::ProcessHandle ph = Poco::Process::launch( _command, _args, 0, &outPipe, &errPipe );
-                Poco::PipeInputStream ostr( outPipe );
-                Poco::PipeInputStream estr( errPipe );
-                _event->payload["return"] = ph.wait();
-                _event->payload["stdout"] = getContentFromStream( ostr );
-                _event->payload["stderr"] = getContentFromStream( estr );
-                // when event gets destructed, its acknowledged.
+
+                std::string command = _command+" ";
+                for(auto arg : _args){
+                    command += arg+" ";
+                }
+                FILE *in;
+                char buff[512];
+                if(!(in = popen(command.c_str(), "r"))){
+                    _event->payload["return"] = 1;
+                    return;
+                }
+                std::string output = "";
+                while(fgets(buff, sizeof(buff), in)!=NULL){
+                    output += std::string{buff};
+                }
+                int ret = pclose(in);
+                int returnCode = WEXITSTATUS(ret);
+                _event->payload["return"] = returnCode;
+                _event->payload["stdout"] = output;
+                _event->payload["stderr"] = "";
             }
         };
     }

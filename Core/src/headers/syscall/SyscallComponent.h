@@ -31,7 +31,8 @@ namespace Susi {
             SyscallComponent( Susi::System::ComponentManager * mgr, Any::Object _commands, size_t threads = 4, size_t queuelen = 16 ) :
                 Susi::System::BaseComponent {mgr},
                  commands {_commands},
-            pool {threads,queuelen} {}
+            pool {threads,queuelen} {
+            }
 
             virtual void start() override {
                 subscribe( "syscall::exec", [this]( EventPtr evt ) {
