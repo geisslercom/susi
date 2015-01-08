@@ -9,14 +9,16 @@
  * @author: Tino Rusch (tino.rusch@webvariants.de)
  */
 
-#ifndef __POCOTCPCLIENT__
-#define __POCOTCPCLIENT__
+#ifndef __TCPCLIENT__
+#define __TCPCLIENT__
 
-#include <Poco/Net/StreamSocket.h>
-#include <Poco/Net/SocketAddress.h>
 #include <thread>
 #include <iostream>
 #include <atomic>
+#include <cstring>      // Needed for memset
+#include <sys/socket.h> // Needed for the socket functions
+#include <netdb.h>      // Needed for the socket functions
+#include <unistd.h>
 #include "logger/easylogging++.h"
 
 namespace Susi {
@@ -52,8 +54,9 @@ namespace Susi {
             size_t maxReconnectCount = 0;
 
             std::atomic<bool> isClosed{false};
-            Poco::Net::SocketAddress sa;
-            Poco::Net::StreamSocket sock;
+            std::string address;
+            int sock;
+
             std::thread runloop;
 
             std::string sendbuff;
@@ -62,4 +65,4 @@ namespace Susi {
     }
 }
 
-#endif // __POCOTCPCLIENT__
+#endif // __TCPCLIENT__
