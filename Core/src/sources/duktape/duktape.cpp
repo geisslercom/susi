@@ -118,7 +118,7 @@
  */
 
 #define DUK_COMPILING_DUKTAPE
-#include "duktape.h"
+#include "duktape/duktape.h"
 
 /*
  *  User declarations, e.g. prototypes for user functions used by Duktape
