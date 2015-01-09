@@ -6,7 +6,7 @@
  *
  * http://www.opensource.org/licenses/mit-license.php
  *
- * @author: Thomas Krause (thomas.krause@webvariants.de)
+ * @author: Tino Rusch (tino.rusch@gmail.com), Thomas Krause (thomas.krause@webvariants.de)
  */
 
 #ifndef __HTTP_SERVER_COMPONENT__
