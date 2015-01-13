@@ -15,7 +15,7 @@
 
 #include "logger/easylogging++.h"
 
-_SHARE_EASYLOGGINGPP(el::Helpers::storage());
+SHARE_EASYLOGGINGPP(el::Helpers::storage());
 
 #if defined(_WIN32)
 #define LIBRARY_API __declspec(dllexport)
@@ -38,15 +38,17 @@ namespace Susi {
         HeartBeatComponent( System::ComponentManager * mgr , Susi::Util::Any & config) :
             System::BaseComponent {mgr},
         stopVar {false} {
-            LOG(DEBUG) << "constructed heartbeat!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+
+            LOG(INFO) << "constructed heartbeat.";
         }
 
         ~HeartBeatComponent() {
             stop();
-            LOG(DEBUG) <<  "stopped HeartBeatComponent" ;
+            LOG(INFO) << "stopped HeartBeatComponent" ;
         }
 
         virtual void start() override {
+            LOG(ERROR) << "starting heartbeat!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
             LOG(DEBUG) << "starting heartbeat!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
             t = std::move( std::thread {
                 [this]() {
