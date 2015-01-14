@@ -1,0 +1,35 @@
+{
+
+	"plugins" : {
+		"path": "./"
+	}
+
+	"logger": {
+		"easylogging++": "../Core/easylogging++.conf"
+	},
+
+	"eventsystem" : {
+		"threads": 4,
+		"queuelen": 32
+	},
+
+	"heartbeat": {},
+
+	"sessionmanager": {
+		"lifetime": 600000
+	},
+
+	"apiserver": {},
+
+	"tcpapiserver": {
+		"address": "localhost:4000"
+	},
+
+	"webstack": {
+		"address": "[::1]:8080",
+		"assets": "./assets",
+		"threads": 4,
+		"backlog": 32
+	}
+
+}

@@ -30,6 +30,7 @@ long Susi::Events::Manager::subscribe(
 }
 
 long Susi::Events::Manager::subscribe( std::string topic, Processor processor, std::string name ) {
+    LOG(DEBUG) << "subcribe processor for "<<topic;
     if( Susi::Util::Glob::isGlob( topic ) ) {
         auto predicate = [topic]( Susi::Events::Event& event ) {
             Susi::Util::Glob glob {topic};
@@ -45,6 +46,7 @@ long Susi::Events::Manager::subscribe( Predicate pred, Processor processor, std:
 }
 
 long Susi::Events::Manager::subscribe( std::string topic, Consumer consumer, std::string name ) {
+    LOG(DEBUG) << "subcribe consumer for "<<topic;
     if( Susi::Util::Glob::isGlob( topic ) ) {
         auto predicate = [topic]( Susi::Events::Event& event ) {
             Susi::Util::Glob glob {topic};
@@ -81,6 +83,7 @@ bool Susi::Events::Manager::unsubscribe( long id ) {
 
 // public publish api function
 void Susi::Events::Manager::publish( Susi::Events::EventPtr event, Susi::Events::Consumer finishCallback, bool processorsOnly, bool consumersOnly ) {
+    LOG(DEBUG) << "publish: "<<event->toString();
     if( event.get()==nullptr ) {
         //std::cout<<"event is nullptr"<<std::endl;
         event.release();

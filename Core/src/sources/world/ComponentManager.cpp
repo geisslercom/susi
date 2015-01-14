@@ -82,7 +82,8 @@ bool Susi::System::ComponentManager::startAll() {
     bool result = true;
 
     for( auto kv: config ) {
-        startComponent( kv.first );
+        if(kv.first != "plugins" && kv.first != "config")
+            startComponent( kv.first );
     }
 
     std::string runningComponents = "";

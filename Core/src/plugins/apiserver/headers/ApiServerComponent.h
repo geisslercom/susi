@@ -16,15 +16,17 @@
 #include <functional>
 #include <mutex>
 #include "events/EventManagerComponent.h"
-#include "sessions/SessionManagerComponent.h"
+#include "../../sessionmanager/headers/SessionManager.h"
 
-#include "world/SessionAwareComponent.h"
+#include "world/BaseComponent.h"
 
 namespace Susi {
     namespace Api {
 
-        class ApiServerComponent : public Susi::System::SessionAwareComponent {
+        class ApiServerComponent : public Susi::System::BaseComponent {
         protected:
+
+            std::shared_ptr<Susi::Sessions::SessionManager> sessionManager;
 
             std::map<std::string,std::function<void( Susi::Util::Any& )>> senders;
             std::mutex sendersMutex;
@@ -55,7 +57,9 @@ namespace Susi {
 
         public:
 
-            ApiServerComponent( Susi::System::ComponentManager * mgr ) : Susi::System::SessionAwareComponent {mgr} {}
+            ApiServerComponent( Susi::System::ComponentManager * mgr ) : Susi::System::BaseComponent {mgr} {
+                sessionManager = componentManager->getComponent<Susi::Sessions::SessionManager>("sessionmanager");
+            }
 
             ~ApiServerComponent(){
                 stop();

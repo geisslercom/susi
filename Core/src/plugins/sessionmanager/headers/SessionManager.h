@@ -19,10 +19,11 @@
 #include <thread>
 #include <iostream>
 
-#include "sessions/Session.h"
 #include "util/Any.h"
 #include "events/EventManager.h"
 
+#include "Session.h"
+ 
 namespace Susi {
     namespace Sessions {
         class SessionManager {

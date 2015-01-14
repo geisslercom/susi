@@ -15,22 +15,8 @@
 #include "world/PluginLoadingComponentManager.h"
 #include "util/Any.h"
  
-#include "apiserver/TCPApiServerComponent.h"
-#include "auth/AuthControllerComponent.h"
-#include "db/DBComponent.h"
-#include "enginestarter/EngineStarterComponent.h"
 #include "events/EventManagerComponent.h"
-#include "heartbeat/HeartBeatComponent.h"
-#include "iocontroller/IOControllerComponent.h"
-#include "sessions/SessionManagerComponent.h"
-#include "states/StateControllerComponent.h"
-#include "syscall/SyscallComponent.h"
-#include "webstack/HttpServerComponent.h"
-#include "autodiscovery/AutoDiscoveryComponent.h"
-#include "events/ConstraintController.h"
-#include "ddhcp/DDHCPComponent.h"
 #include "logger/Logger.h"
-#include "duktape/DuktapeEngine.h"
 
 namespace Susi {
 namespace System {

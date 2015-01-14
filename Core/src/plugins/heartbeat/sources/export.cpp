@@ -37,19 +37,16 @@ namespace Susi {
     public:
         HeartBeatComponent( System::ComponentManager * mgr , Susi::Util::Any & config) :
             System::BaseComponent {mgr},
-        stopVar {false} {
-
-            LOG(INFO) << "constructed heartbeat.";
-        }
+        stopVar {false} {}
 
         ~HeartBeatComponent() {
             stop();
-            LOG(INFO) << "stopped HeartBeatComponent" ;
+            LOG(INFO) << "stopped HeartBeatComponent." ;
         }
 
         virtual void start() override {
-            LOG(ERROR) << "starting heartbeat!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
-            LOG(DEBUG) << "starting heartbeat!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+            LOG(INFO) << "started HeartBeatComponent." ;
+        
             t = std::move( std::thread {
                 [this]() {
                     int count = 0;

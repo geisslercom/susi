@@ -40,8 +40,13 @@ include_directories( ${CMAKE_SOURCE_DIR}/test/gtest-1.7.0/include )
 include_directories( ${POCO_INCLUDE_DIR} )
 include_directories( ${SOCI_INCLUDE_DIRS} )
 
-file( GLOB SRCFILES ${CMAKE_SOURCE_DIR}/src/sources/**/*.cpp )
-file( GLOB TESTFILES ${CMAKE_SOURCE_DIR}/test/*/*.cpp )
+file( GLOB SRCFILES ${CMAKE_SOURCE_DIR}/src/sources/config/*.cpp
+					${CMAKE_SOURCE_DIR}/src/sources/world/*.cpp
+					${CMAKE_SOURCE_DIR}/src/sources/util/*.cpp
+					${CMAKE_SOURCE_DIR}/src/sources/events/*.cpp
+					${CMAKE_SOURCE_DIR}/src/sources/logger/*.cpp
+					${CMAKE_SOURCE_DIR}/src/sources/iocontroller/*.cpp )
+#file( GLOB TESTFILES ${CMAKE_SOURCE_DIR}/test/*/*.cpp )
 
 #easylogging++ defines 
 add_definitions(-D_ELPP_THREAD_SAFE)

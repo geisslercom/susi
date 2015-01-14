@@ -13,7 +13,7 @@
 #define __SESSION_MANAGER_COMPONENT__
 
 #include "world/BaseComponent.h"
-#include "sessions/SessionManager.h"
+#include "SessionManager.h"
 
 namespace Susi {
     namespace Sessions {

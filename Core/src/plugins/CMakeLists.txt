@@ -12,3 +12,7 @@
 ###################################################################################
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/heartbeat)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/sessionmanager)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/apiserver)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/tcpapiserver)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/webstack)

@@ -15,13 +15,15 @@
 #include "Poco/Net/HTTPServerRequest.h"
 #include "Poco/Net/HTTPServerResponse.h"
 #include "Poco/Net/HTTPRequestHandler.h"
-
 #include "Poco/Net/WebSocket.h"
 
 #include <chrono>
-#include "../../plugins/apiserver/headers/ApiServerComponent.h"
+
 #include "util/Any.h"
 #include "logger/easylogging++.h"
+
+#include "../../apiserver/headers/ApiServerComponent.h"
+#include "../../sessionmanager/headers/SessionManagerComponent.h"
 
 namespace Susi {
 
