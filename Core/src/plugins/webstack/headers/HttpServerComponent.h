@@ -58,7 +58,7 @@ public:
 	}
 
     virtual void stop() override {
-        server.stop();
+        server.stopAll(true);
     }
 
     ~HttpServerComponent() {
