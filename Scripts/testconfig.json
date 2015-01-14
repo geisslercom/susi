@@ -5,7 +5,7 @@
 	}
 
 	"logger": {
-		"easylogging++": "../Core/easylogging++.conf"
+		"easylogging++": "../Scripts/easylogging++.conf"
 	},
 
 	"eventsystem" : {
@@ -58,7 +58,7 @@
 	},
 
 	"duktape": {
-		"source": "./test.js"
+		"source": "../Scripts/duktapeTest.js"
 	}
 
 }
